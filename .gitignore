@@ -1,4 +1,3 @@
-bin/js/
 _out/
 snapshot*/
 test/output/
@@ -103,7 +102,6 @@ DocProject/Help/html
 publish
 
 # Others
-# [Bb]in
 [Oo]bj
 sql
 TestResults

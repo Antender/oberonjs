@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Oberon online compiler</title>
+        <link rel="stylesheet" href="jslibs/codemirror/codemirror.css">
+        <!-- <link rel="stylesheet" href="http://codemirror.net/doc/docs.css"> -->
+        <script src="jslibs/codemirror/codemirror.js"></script>
+        <script src="jslibs/codemirror/javascript.js"></script>
+        <script src="jslibs/processing/processing.js"></script>
+        <script src="codemirror/oberon07.js"></script>
+        <style type="text/css">
+        .code {
+            display: inline-block;
+        }
+        #links {
+            float:right;
+        }       
+        </style>
+    </head>
+<body>
+
+<div id="links">
+    <p><a href="http://oberspace.dyndns.org">Home</a></p>
+    <p><a href="https://github.com/vladfolts/oberonjs">Development</a></p>
+</div>
+
+<p>
+<form action="">
+Oberon module(s):
+<input type="radio" name="compiler" value="oberon" checked>Oberon</input>
+<input type="radio" name="compiler" value="eberon" id="eberon">
+    <a href="https://github.com/vladfolts/oberonjs/wiki/Eberon">
+    Eberon
+    </a>
+</input>
+<p/>
+<input type="checkbox" id="checkIndexesOption">checked indexes</input>
+</form>
+</p>
+
+<div class="code">
+<textarea id="source" rows="10" cols="80">
+MODULE test;
+IMPORT JS;
+BEGIN
+    JS.alert("Hello, World!")
+END test.
+</textarea>
+</div>
+
+    <p>
+        <button onclick="compile()">Compile</button>
+        <button onclick="compile(); run()">Compile &amp; Run</button>
+    </p>
+
+<p id="compileErrors" style="color:red"></p>
+<p id="compileTime"></p>
+
+<div class="code">
+<textarea id="result" rows="10" cols="80">
+</textarea>
+</div>
+    <p><button onclick="run()">Run</button></p>
+    <p><button onclick="run_tests()">Run Tests</button></p>
+<p id="runErrors" style="color:red"></p>
+<p id="runTime"></p>
+<p id="testsResult"></p>
+<p id="version"></p>
+
+<script src="oc.js"></script>
+
+<script>
+    var oberonEditor = CodeMirror.fromTextArea(document.getElementById('source'), {
+            lineNumbers: true,
+            mode: "text/x-oberon07"
+        });
+    var javascriptEditor = CodeMirror.fromTextArea(document.getElementById('result'), {
+        lineNumbers: true,
+        mode: "text/javascript"
+    });
+
+    if (typeof buildVersion != "undefined")
+        document.getElementById("version").textContent = buildVersion;
+
+    function compile(){
+        var src = oberonEditor.getValue();
+        var result;
+        var errors = "";
+        var start = new Date();
+        try {
+            var language = require(
+                document.getElementById("eberon").checked
+                    ? "eberon/eberon_grammar.js"
+                    : "oberon/oberon_grammar.js").language;
+            var options = {checkIndexes: document.getElementById("checkIndexesOption").checked};
+            result = require("oc.js").compile(
+                    src, 
+                    language, 
+                    function(e){errors += e;},
+                    options
+                    );
+            }
+        catch (e) {
+            errors += e;
+            }
+        var compileTime = (new Date() - start) / 1000;
+
+        if (!result)
+            result = "";
+        javascriptEditor.setValue(result);
+        document.getElementById("compileErrors").textContent = errors;
+        document.getElementById("compileTime").textContent = "compile time (seconds): " + compileTime;
+            }
+
+        function timed_run(action){
+            var start = new Date();
+            var result = action();
+            var runTime = (new Date() - start) / 1000;
+            document.getElementById("runTime").textContent = "run time (seconds): " + runTime;
+            return result;
+        }
+
+        function run(){
+            var errElement = document.getElementById("runErrors");
+            errElement.textContent = "";
+            timed_run(function(){
+                try{
+                    eval(javascriptEditor.getValue());
+                }
+                catch (e){
+                    var errors = "" + e;
+                    errElement.textContent = errors;
+                }
+            });
+        }
+
+        function run_tests(){
+            var resultsElement = document.getElementById("testsResult");
+            resultsElement.textContent = "running...";
+            var result = timed_run(function(){
+                return require("test_unit.js").run();
+            });
+            resultsElement.textContent = result ? "Tests OK" : "Tests failed";
+        }
+</script>
+
+</body>
+
+</html>
